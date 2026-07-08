@@ -1,3 +1,5 @@
+import os
+
 import torch
 
 from config import get_config
@@ -7,9 +9,15 @@ from model import UNet
 from train import train_model
 
 
+def prepare_output_dirs(config):
+    os.makedirs(config.result_root, exist_ok=True)
+    os.makedirs(config.log_root, exist_ok=True)
+
+
 def main():
     config = get_config()
     torch.manual_seed(config.seed)
+    prepare_output_dirs(config)
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"Using device: {device}")

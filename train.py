@@ -5,7 +5,7 @@ from tqdm import tqdm
 from eval import create_metric_state, summarize_metric_state, update_metric_state
 from torch.utils.tensorboard import SummaryWriter
 import os
-import shutil
+from datetime import datetime
 
 
 
@@ -17,10 +17,9 @@ def train_model(
     device,
     config,
 ):
-    log_dir = os.path.join(config.log_root, config.model_name)
+    run_name = f"{config.model_name}_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+    log_dir = os.path.join(config.log_root, run_name)
     save_path = os.path.join(config.result_root, config.save_name)
-    if os.path.exists(log_dir):
-        shutil.rmtree(log_dir)
     os.makedirs(os.path.dirname(save_path), exist_ok=True)
     writer = SummaryWriter(log_dir)
     # 损失函数：交叉熵损失（适用于多类别分割）
