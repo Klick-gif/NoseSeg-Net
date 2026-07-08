@@ -8,16 +8,14 @@ from eval import calculate_metrics
 from model import UNet
 from train import train_model
 
-
-def prepare_output_dirs(config):
-    os.makedirs(config.result_root, exist_ok=True)
-    os.makedirs(config.log_root, exist_ok=True)
+import warnings
+warnings.filterwarnings("ignore", category=FutureWarning)
 
 
 def main():
     config = get_config()
     torch.manual_seed(config.seed)
-    prepare_output_dirs(config)
+    os.makedirs(config.result_root, exist_ok=True)
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"Using device: {device}")

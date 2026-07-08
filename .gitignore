@@ -17,6 +17,9 @@ env/
 *.nii
 *.nii.gz
 *.gz
+cache/
+*.zip
+*.tar
 
 # Model checkpoints / weights
 *.pth

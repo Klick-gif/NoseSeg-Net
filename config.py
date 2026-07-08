@@ -6,6 +6,8 @@ from dataclasses import dataclass
 class Config:
     seed: int = 42
     data_root: str = "dataset"
+    cache_root: str = "cache"
+    use_cache: bool = False
     image_size: int = 512
     skip_empty: bool = False
     train_ratio: float = 0.8
@@ -32,32 +34,36 @@ def get_config():
     parser = argparse.ArgumentParser(description="Train nose segmentation model")
 
     parser.add_argument("--seed", type=int, default=Config.seed)
-    parser.add_argument("--data-root", type=str, default=Config.data_root)
-    parser.add_argument("--image-size", type=int, default=Config.image_size)
-    parser.add_argument("--skip-empty", action="store_true", default=Config.skip_empty)
-    parser.add_argument("--train-ratio", type=float, default=Config.train_ratio)
+    parser.add_argument("--data_root", type=str, default=Config.data_root)
+    parser.add_argument("--cache_root", type=str, default=Config.cache_root)
+    parser.add_argument("--use_cache", action="store_true", default=Config.use_cache)
+    parser.add_argument("--image_size", type=int, default=Config.image_size)
+    parser.add_argument("--skip_empty", action="store_true", default=Config.skip_empty)
+    parser.add_argument("--train_ratio", type=float, default=Config.train_ratio)
 
-    parser.add_argument("--batch-size", type=int, default=Config.batch_size)
-    parser.add_argument("--no-shuffle", action="store_true")
-    parser.add_argument("--num-workers", type=int, default=Config.num_workers)
-    parser.add_argument("--no-pin-memory", action="store_true")
+    parser.add_argument("--batch_size", type=int, default=Config.batch_size)
+    parser.add_argument("--no_shuffle", action="store_true")
+    parser.add_argument("--num_workers", type=int, default=Config.num_workers)
+    parser.add_argument("--no_pin_memory", action="store_true")
 
-    parser.add_argument("--in-channels", type=int, default=Config.in_channels)
-    parser.add_argument("--num-classes", type=int, default=Config.num_classes)
+    parser.add_argument("--in_channels", type=int, default=Config.in_channels)
+    parser.add_argument("--num_classes", type=int, default=Config.num_classes)
     parser.add_argument("--epochs", type=int, default=Config.epochs)
     parser.add_argument("--lr", type=float, default=Config.lr)
-    parser.add_argument("--scheduler-patience", type=int, default=Config.scheduler_patience)
-    parser.add_argument("--scheduler-factor", type=float, default=Config.scheduler_factor)
+    parser.add_argument("--scheduler_patience", type=int, default=Config.scheduler_patience)
+    parser.add_argument("--scheduler_factor", type=float, default=Config.scheduler_factor)
 
-    parser.add_argument("--model-name", type=str, default=Config.model_name)
-    parser.add_argument("--log-root", type=str, default=Config.log_root)
-    parser.add_argument("--result-root", type=str, default=Config.result_root)
-    parser.add_argument("--save-name", type=str, default=Config.save_name)
+    parser.add_argument("--model_name", type=str, default=Config.model_name)
+    parser.add_argument("--log_root", type=str, default=Config.log_root)
+    parser.add_argument("--result_root", type=str, default=Config.result_root)
+    parser.add_argument("--save_name", type=str, default=Config.save_name)
 
     args = parser.parse_args()
     return Config(
         seed=args.seed,
         data_root=args.data_root,
+        cache_root=args.cache_root,
+        use_cache=args.use_cache,
         image_size=args.image_size,
         skip_empty=args.skip_empty,
         train_ratio=args.train_ratio,

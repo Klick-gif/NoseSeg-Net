@@ -111,6 +111,59 @@ class NoseDataset(Dataset):
         return x, y
 
 
+class CachedNoseDataset(Dataset):
+    def __init__(self, cache_root="cache"):
+        self.cache_root = cache_root
+        self.samples = []
+        self.slices = []
+
+        if not os.path.isdir(cache_root):
+            raise ValueError(f"缓存目录不存在: {cache_root}，请先运行 preprocess_cache.py")
+
+        case_names = [
+            name for name in sorted(os.listdir(cache_root))
+            if os.path.isdir(os.path.join(cache_root, name))
+        ]
+
+        if not case_names:
+            raise ValueError(f"缓存目录中没有 case 数据: {cache_root}")
+
+        print(f"Found {len(case_names)} cached cases:")
+
+        for case_idx, case_name in enumerate(case_names):
+            case_dir = os.path.join(cache_root, case_name)
+            slice_files = [
+                os.path.join(case_dir, f)
+                for f in sorted(os.listdir(case_dir))
+                if f.endswith(".pt")
+            ]
+
+            if not slice_files:
+                continue
+
+            self.samples.append({
+                "case_name": case_name,
+                "slice_files": slice_files,
+            })
+
+            for slice_idx in range(len(slice_files)):
+                self.slices.append((case_idx, slice_idx))
+
+            print(f"  {case_name}: cached slices={len(slice_files)}")
+
+        if not self.slices:
+            raise ValueError(f"缓存目录中没有 .pt 切片: {cache_root}")
+
+    def __len__(self):
+        return len(self.slices)
+
+    def __getitem__(self, idx):
+        case_idx, slice_idx = self.slices[idx]
+        slice_path = self.samples[case_idx]["slice_files"][slice_idx]
+        item = torch.load(slice_path, map_location="cpu", weights_only=True)
+        return item["image"], item["label"]
+
+
 if __name__ == "__main__":
     dataset = NoseDataset()
     print(f"Total training slices: {len(dataset)}")

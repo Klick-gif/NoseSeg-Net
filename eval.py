@@ -123,11 +123,13 @@ def visualize_successful_segmentation(image, true_mask, pred_mask, metrics):
 if __name__ == "__main__":
     from model import UNet
     from data_loader import load_data_loader
+    from config import get_config
+    config = get_config()
 
-    _, val_loader = load_data_loader()  # 获取验证集 DataLoader
+    _, val_loader = load_data_loader(config=config)  # 获取验证集 DataLoader
     device = "cuda" if torch.cuda.is_available() else "cpu"
     model = UNet().to(device)
-    model.load_state_dict(torch.load("./results/best_unet_model_mIoU0.9562.pth"))  # 加载训练好的模型
+    model.load_state_dict(torch.load("./results/best_unet_model.pth", weights_only=True))  # 加载训练好的模型
     model.eval()
     
     metrics = calculate_metrics(model, val_loader, device)  # 评估模型

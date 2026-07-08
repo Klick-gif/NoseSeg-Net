@@ -3,7 +3,7 @@ from collections import defaultdict
 import torch
 from torch.utils.data import DataLoader, Subset
 
-from dataset import NoseDataset
+from dataset import CachedNoseDataset, NoseDataset
 
 
 def split_indices_by_case(dataset, train_ratio=0.8, seed=42):
@@ -31,11 +31,15 @@ def split_indices_by_case(dataset, train_ratio=0.8, seed=42):
 
 
 def load_data_loader(config):
-    dataset = NoseDataset(
-        data_root=config.data_root,
-        size=(config.image_size, config.image_size),
-        skip_empty=config.skip_empty,
-    )
+    if config.use_cache:
+        print("Using cache")
+        dataset = CachedNoseDataset(cache_root=config.cache_root)
+    else:
+        dataset = NoseDataset(
+            data_root=config.data_root,
+            size=(config.image_size, config.image_size),
+            skip_empty=config.skip_empty,
+        )
     train_indices, val_indices = split_indices_by_case(
         dataset,
         train_ratio=config.train_ratio,
