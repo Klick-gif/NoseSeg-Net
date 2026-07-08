@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 from tqdm import tqdm
-from eval import calculate_metrics
+from eval import create_metric_state, summarize_metric_state, update_metric_state
 from torch.utils.tensorboard import SummaryWriter
 import os
 import shutil
@@ -10,27 +10,39 @@ import shutil
 
 
 
-def train_model(model, train_loader, val_loader, device, num_epochs=10):
-    log_dir = "./runs/scalar_example"
+def train_model(
+    model,
+    train_loader,
+    val_loader,
+    device,
+    config,
+):
+    log_dir = os.path.join(config.log_root, config.model_name)
+    save_path = os.path.join(config.result_root, config.save_name)
     if os.path.exists(log_dir):
         shutil.rmtree(log_dir)
+    os.makedirs(os.path.dirname(save_path), exist_ok=True)
     writer = SummaryWriter(log_dir)
     # 损失函数：交叉熵损失（适用于多类别分割）
     criterion = nn.CrossEntropyLoss()
-    optimizer = optim.Adam(model.parameters(), lr=1e-4)
-    scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, patience=10, factor=0.5)
+    optimizer = optim.Adam(model.parameters(), lr=config.lr)
+    scheduler = optim.lr_scheduler.ReduceLROnPlateau(
+        optimizer,
+        patience=config.scheduler_patience,
+        factor=config.scheduler_factor,
+    )
     
     best_val_loss = float('inf')
     train_losses = []
     val_losses = []
     
-    for epoch in range(num_epochs):
+    for epoch in range(config.epochs):
         # 训练阶段
         model.train()
         train_loss = 0
         train_batches = 0
         
-        train_bar = tqdm(train_loader, desc=f'Epoch {epoch+1}/{num_epochs} [Train]')
+        train_bar = tqdm(train_loader, desc=f'Epoch {epoch+1}/{config.epochs} [Train]')
         for x, y in train_bar:
             x, y = x.to(device), y.to(device)
             
@@ -51,19 +63,21 @@ def train_model(model, train_loader, val_loader, device, num_epochs=10):
         model.eval()
         val_loss = 0
         val_batches = 0
+        metric_state = create_metric_state(num_classes=config.num_classes, device=device)
         
         with torch.no_grad():
-            val_bar = tqdm(val_loader, desc=f'Epoch {epoch+1}/{num_epochs} [Val]')
+            val_bar = tqdm(val_loader, desc=f'Epoch {epoch+1}/{config.epochs} [Val]')
             for x, y in val_bar:
                 x, y = x.to(device), y.to(device)
                 outputs = model(x)
                 loss = criterion(outputs, y)
+                update_metric_state(metric_state, outputs, y)
                 
                 val_loss += loss.item()
                 val_batches += 1
                 val_bar.set_postfix({'loss': loss.item()})
             
-            val_metrics = calculate_metrics(model, val_loader, device)
+            val_metrics = summarize_metric_state(metric_state)
 
         
         avg_val_loss = val_loss / val_batches
@@ -75,10 +89,10 @@ def train_model(model, train_loader, val_loader, device, num_epochs=10):
         # 保存最佳模型
         if avg_val_loss < best_val_loss:
             best_val_loss = avg_val_loss
-            torch.save(model.state_dict(), './results/best_unet_model.pth')
+            torch.save(model.state_dict(), save_path)
             print(f"✓ New best model saved with val_loss: {avg_val_loss:.4f}")
         
-        print(f'Epoch {epoch+1}/{num_epochs}: '
+        print(f'Epoch {epoch+1}/{config.epochs}: '
               f'Train Loss: {avg_train_loss:.4f}, '
               f'Val Loss: {avg_val_loss:.4f}, '
               f'LR: {optimizer.param_groups[0]["lr"]:.2e}',

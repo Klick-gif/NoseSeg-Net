@@ -2,42 +2,43 @@ import torch
 import numpy as np
 import matplotlib.pyplot as plt
 
-def calculate_metrics(model, test_loader, device, num_classes=2):
-    """计算分割评估指标：mIoU、Dice、Accuracy、Precision、Recall"""
-    model.eval()
+
+def create_metric_state(num_classes, device):
+    return {
+        "num_classes": num_classes,
+        "total_correct": 0,
+        "total_pixels": 0,
+        "intersections": torch.zeros(num_classes, device=device),
+        "pred_areas": torch.zeros(num_classes, device=device),
+        "target_areas": torch.zeros(num_classes, device=device),
+    }
+
+
+def update_metric_state(state, outputs, y):
+    preds = torch.argmax(outputs, dim=1)
+    state["total_correct"] += (preds == y).sum().item()
+    state["total_pixels"] += y.numel()
+
+    for class_idx in range(1, state["num_classes"]):  # 跳过背景
+        pred = (preds == class_idx).float()
+        target = (y == class_idx).float()
+
+        state["intersections"][class_idx] += (pred * target).sum()
+        state["pred_areas"][class_idx] += pred.sum()
+        state["target_areas"][class_idx] += target.sum()
+
+
+def summarize_metric_state(state):
     eps = 1e-8
-    total_correct = 0
-    total_pixels = 0
-    intersections = torch.zeros(num_classes, device=device)
-    pred_areas = torch.zeros(num_classes, device=device)
-    target_areas = torch.zeros(num_classes, device=device)
-    
-    with torch.no_grad():
-        for x, y in test_loader:
-            x, y = x.to(device), y.to(device)
-            outputs = model(x)
-            preds = torch.argmax(outputs, dim=1)
-
-            total_correct += (preds == y).sum().item()
-            total_pixels += y.numel()
-            
-            for class_idx in range(1, num_classes):  # 跳过背景
-                pred = (preds == class_idx).float()
-                target = (y == class_idx).float()
-                
-                intersections[class_idx] += (pred * target).sum()
-                pred_areas[class_idx] += pred.sum()
-                target_areas[class_idx] += target.sum()
-
     iou_scores = []
     dice_scores = []
     precision_scores = []
     recall_scores = []
 
-    for class_idx in range(1, num_classes):  # 跳过背景
-        intersection = intersections[class_idx]
-        pred_area = pred_areas[class_idx]
-        target_area = target_areas[class_idx]
+    for class_idx in range(1, state["num_classes"]):  # 跳过背景
+        intersection = state["intersections"][class_idx]
+        pred_area = state["pred_areas"][class_idx]
+        target_area = state["target_areas"][class_idx]
         union = pred_area + target_area - intersection
 
         if union > 0:
@@ -53,10 +54,24 @@ def calculate_metrics(model, test_loader, device, num_classes=2):
     return {
         "mIoU": float(np.mean(iou_scores)) if iou_scores else 0.0,
         "Dice": float(np.mean(dice_scores)) if dice_scores else 0.0,
-        "Accuracy": total_correct / total_pixels if total_pixels > 0 else 0.0,
+        "Accuracy": state["total_correct"] / state["total_pixels"] if state["total_pixels"] > 0 else 0.0,
         "Precision": float(np.mean(precision_scores)) if precision_scores else 0.0,
         "Recall": float(np.mean(recall_scores)) if recall_scores else 0.0,
     }
+
+
+def calculate_metrics(model, test_loader, device, num_classes=2):
+    """计算分割评估指标：mIoU、Dice、Accuracy、Precision、Recall"""
+    model.eval()
+    state = create_metric_state(num_classes, device)
+
+    with torch.no_grad():
+        for x, y in test_loader:
+            x, y = x.to(device), y.to(device)
+            outputs = model(x)
+            update_metric_state(state, outputs, y)
+
+    return summarize_metric_state(state)
 
 
 def visualize_successful_segmentation(image, true_mask, pred_mask, metrics):

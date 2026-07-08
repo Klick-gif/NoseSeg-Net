@@ -30,19 +30,16 @@ def split_indices_by_case(dataset, train_ratio=0.8, seed=42):
     return train_indices, val_indices
 
 
-def load_data_loader(
-    batch_size=8,
-    shuffle=True,
-    data_root="dataset",
-    train_ratio=0.8,
-    seed=42,
-    num_workers=6,
-):
-    dataset = NoseDataset(data_root=data_root)
+def load_data_loader(config):
+    dataset = NoseDataset(
+        data_root=config.data_root,
+        size=(config.image_size, config.image_size),
+        skip_empty=config.skip_empty,
+    )
     train_indices, val_indices = split_indices_by_case(
         dataset,
-        train_ratio=train_ratio,
-        seed=seed,
+        train_ratio=config.train_ratio,
+        seed=config.seed,
     )
 
     train_dataset = Subset(dataset, train_indices)
@@ -53,17 +50,17 @@ def load_data_loader(
 
     train_loader = DataLoader(
         train_dataset,
-        batch_size=batch_size,
-        shuffle=shuffle,
-        num_workers=num_workers,
-        pin_memory=True,
+        batch_size=config.batch_size,
+        shuffle=config.shuffle,
+        num_workers=config.num_workers,
+        pin_memory=config.pin_memory,
     )
     val_loader = DataLoader(
         val_dataset,
-        batch_size=batch_size,
+        batch_size=config.batch_size,
         shuffle=False,
-        num_workers=num_workers,
-        pin_memory=True,
+        num_workers=config.num_workers,
+        pin_memory=config.pin_memory,
     )
 
     return train_loader, val_loader
