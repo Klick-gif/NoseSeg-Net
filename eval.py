@@ -1,6 +1,9 @@
 import torch
 import numpy as np
 import matplotlib.pyplot as plt
+import time
+from thop import profile
+from thop import clever_format
 
 
 def create_metric_state(num_classes, device):
@@ -120,16 +123,75 @@ def visualize_successful_segmentation(image, true_mask, pred_mask, metrics):
     plt.show()
 
 
+def calculate_model_complexity(model,
+                               input_size=(1, 1, 512, 512),
+                               device="cuda"):
+    """Params、FLOPs统计"""
+
+    model.eval()
+
+    dummy = torch.randn(input_size).to(device)
+
+    flops, params = profile(
+        model,
+        inputs=(dummy,),
+        verbose=False
+    )
+
+    flops, params = clever_format(
+        [flops, params],
+        "%.3f"
+    )
+
+    return params, flops
+
+
+def calculate_fps(model, input_size=(1,1,512,512), device="cuda",
+                  warmup=20, repeat=100):
+    """测试推理速度FPS, latency(ms)"""
+
+    model.eval()
+
+    dummy = torch.randn(input_size).to(device)
+
+    with torch.no_grad():
+
+        # GPU预热
+        for _ in range(warmup):
+            _ = model(dummy)
+
+        if device == "cuda":
+            torch.cuda.synchronize()
+
+        start = time.time()
+
+        for _ in range(repeat):
+            _ = model(dummy)
+
+        if device == "cuda":
+            torch.cuda.synchronize()
+
+        end = time.time()
+
+    total = end - start
+
+    latency = total / repeat
+
+    fps = repeat / total
+
+    return fps, latency * 1000
+
+
 if __name__ == "__main__":
-    from model import UNet
+    from model import choose_model
     from data_loader import load_data_loader
     from config import get_config
     config = get_config()
 
-    _, val_loader = load_data_loader(config=config)  # 获取验证集 DataLoader
+    train_loader, val_loader = load_data_loader(config=config)  # 获取验证集 DataLoader
     device = "cuda" if torch.cuda.is_available() else "cpu"
-    model = UNet().to(device)
-    model.load_state_dict(torch.load("./results/best_unet_model.pth", weights_only=True))  # 加载训练好的模型
+    model = choose_model(config).to(device)
+    model.load_state_dict(torch.load(f"./results/best_{config.model}_model.pth", weights_only=True))  # 加载训练好的模型
     model.eval()
     
     metrics = calculate_metrics(model, val_loader, device)  # 评估模型
@@ -138,15 +200,29 @@ if __name__ == "__main__":
           f"Recall: {metrics['Recall']:.4f}")
     
     # 可视化成功分割结果
-    image_batch, true_mask_batch = next(iter(val_loader))
+    image_batch, true_mask_batch = next(iter(train_loader))
+    for i in range(image_batch.shape[0]):
+        with torch.no_grad():   
+            x = image_batch[i].unsqueeze(0).to(device)
+            outputs = model(x)
+            pred_mask = torch.argmax(outputs, dim=1)[0].cpu().numpy()
 
-    with torch.no_grad():   
-        x = image_batch[0].unsqueeze(0).to(device)
-        outputs = model(x)
-        pred_mask = torch.argmax(outputs, dim=1)[0].cpu().numpy()
+        image = image_batch[i].cpu().numpy().squeeze()
+        true_mask = true_mask_batch[i].cpu().numpy().squeeze()
+        visualize_successful_segmentation(image, true_mask, pred_mask, metrics)
 
-    image = image_batch[0].cpu().numpy().squeeze()
-    true_mask = true_mask_batch[0].cpu().numpy().squeeze()
-    visualize_successful_segmentation(image, true_mask, pred_mask, metrics)
+
+    # 计算模型复杂度
+    params, flops = calculate_model_complexity(
+        model,
+        input_size=(1,1,config.image_size,config.image_size),
+        device=device
+    )
+    print(f"Params: {params}, FLOPs: {flops}")
+    
+    # 计算推理速度
+    fps, latency = calculate_fps(model, device=device)
+    print(f"FPS: {fps:.2f}, Latency(ms): {latency:.2f}")
+
 
     
