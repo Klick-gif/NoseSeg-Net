@@ -2,8 +2,8 @@ import nibabel as nib
 import numpy as np
 
 # 所有待合并文件列表，按顺序：靠前的先合并，后面的标签会覆盖前面重叠区域
-file_list = ["001.nii.gz", "002.nii.gz", "003.nii.gz", "004.nii.gz"]
-out_path = "nose_layer20_Seg.nii.gz"
+file_list = ["../../001.nii.gz", "../../002.nii.gz", "../../003.nii.gz", "../../004.nii.gz"]
+out_path = "../../nose_layer20_Seg.nii.gz"
 
 # 加载第一个文件作为基础基底
 base_img = nib.load(file_list[0])

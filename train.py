@@ -17,9 +17,10 @@ def train_model(
     device,
     config,
 ):
-    run_name = f"{config.model_name}_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+    run_name = f"{config.model}_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
     log_dir = os.path.join(config.log_root, run_name)
-    save_path = os.path.join(config.result_root, config.save_name)
+    save_name = f"best_{config.model}_model.pth"
+    save_path = os.path.join(config.result_root, save_name)
     os.makedirs(os.path.dirname(save_path), exist_ok=True)
     writer = SummaryWriter(log_dir)
     # 损失函数：交叉熵损失（适用于多类别分割）

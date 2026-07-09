@@ -16,3 +16,10 @@ python preprocess.py
 
 python main.py --use_cache --batch_size 4 --epochs 50 --lr 1e-4 --num_workers 8 
 ```
+
+# 可以选择不同模型
+```bash
+python main.py --model unet --batch_size 12 --epochs 50 --lr 1e-4 --num_workers 8
+
+python main.py --model attunet --batch_size 12 --epochs 50 --lr 1e-4 --num_workers 8 --use_cache
+```

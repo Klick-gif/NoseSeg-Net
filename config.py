@@ -21,13 +21,12 @@ class Config:
     num_classes: int = 2
     epochs: int = 20
     lr: float = 1e-4
-    scheduler_patience: int = 10
+    scheduler_patience: int = 5
     scheduler_factor: float = 0.5
 
-    model_name: str = "unet"
+    model: str = "unet"
     log_root: str = "runs"
     result_root: str = "results"
-    save_name: str = "best_unet_model.pth"
 
 
 def get_config():
@@ -53,10 +52,9 @@ def get_config():
     parser.add_argument("--scheduler_patience", type=int, default=Config.scheduler_patience)
     parser.add_argument("--scheduler_factor", type=float, default=Config.scheduler_factor)
 
-    parser.add_argument("--model_name", type=str, default=Config.model_name)
+    parser.add_argument("--model", type=str, default=Config.model)
     parser.add_argument("--log_root", type=str, default=Config.log_root)
     parser.add_argument("--result_root", type=str, default=Config.result_root)
-    parser.add_argument("--save_name", type=str, default=Config.save_name)
 
     args = parser.parse_args()
     return Config(
@@ -77,8 +75,7 @@ def get_config():
         lr=args.lr,
         scheduler_patience=args.scheduler_patience,
         scheduler_factor=args.scheduler_factor,
-        model_name=args.model_name,
+        model=args.model,
         log_root=args.log_root,
         result_root=args.result_root,
-        save_name=args.save_name,
     )

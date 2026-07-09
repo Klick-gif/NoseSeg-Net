@@ -5,7 +5,7 @@ import torch
 from config import get_config
 from data_loader import load_data_loader
 from eval import calculate_metrics
-from model import UNet
+from model import choose_model
 from train import train_model
 
 import warnings
@@ -23,11 +23,7 @@ def main():
 
     train_loader, val_loader = load_data_loader(config)
 
-    model = UNet(
-        in_channels=config.in_channels,
-        out_channels=config.num_classes,
-    ).to(device)
-
+    model = choose_model(config).to(device)
     train_model(
         model,
         train_loader,
