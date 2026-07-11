@@ -26,6 +26,7 @@
 - **推理速度基准** — FPS、Latency 实测（含 GPU 预热 & CUDA 同步）
 - **TensorBoard 可视化** — 训练曲线与指标实时监控
 - **分割结果可视化** — 原图 / 标签 / 预测 / 差异图一键生成
+- **推理预测** — 支持单张图片 & 文件夹批量推理，自动展开 NIfTI 3D 体积切片，输出分割掩膜叠加图
 
 ---
 
@@ -39,7 +40,8 @@ ITK/
 ├── model.py               # U-Net / Attention U-Net / U-Net++ 模型定义
 ├── train.py               # 训练循环（含 TensorBoard 日志）
 ├── eval.py                # 评估指标计算、模型复杂度分析、推理测速 & 可视化
-├── main.py                # 入口脚本
+├── predict.py             # 推理脚本：单张图片 / 文件夹批量推理，输出分割掩膜叠加图
+├── main.py                # 训练入口脚本
 ├── preprocess_cache.py    # 离线预处理：NIfTI → .pt 张量缓存
 ├── test/
 │   └── test.py            # 标签合并工具
@@ -53,6 +55,7 @@ ITK/
 │   └── nose_layer36/
 ├── cache/                 # 预处理后的 .pt 缓存（可选）
 ├── results/               # 模型权重保存
+├── outputs/               # 推理输出（分割掩膜叠加图）
 ├── runs/                  # TensorBoard 日志
 ├── requirements.txt
 ├── .gitignore
@@ -76,6 +79,11 @@ ITK/
 | **nose_layer36** | 鼻窦 36 层 | `nose_layer36.nii` | `nose_layer36_Seg.nii` |
 
 > 数据集自动扫描 `dataset/` 目录，按文件名中是否包含 `seg` 区分原图与标注。
+
+原标注数据以及预处理后的数据均存储，预训练模型在网盘可自取
+通过网盘分享的文件：NoseSeg
+链接: https://pan.baidu.com/s/1E3Ti4Xhj68xMvsEMFBfBBQ?pwd=swie 提取码: swie 
+--来自百度网盘超级会员v4的分享
 
 ---
 
@@ -167,7 +175,7 @@ python main.py --use_cache --batch_size 4 --epochs 50 --lr 1e-4 --num_workers 8
 
 ```bash
 # U-Net
-python main.py --model unet --batch_size 12 --epochs 50 --lr 1e-4 --num_workers 8
+python main.py --model unet --batch_size 12 --epochs 50 --lr 1e-4 --num_workers 8 --use_cache
 
 # Attention U-Net
 python main.py --model attunet --batch_size 12 --epochs 50 --lr 1e-4 --num_workers 8 --use_cache
@@ -179,7 +187,11 @@ python main.py --model unet++ --batch_size 12 --epochs 50 --lr 1e-4 --num_worker
 ### 评估、推理测速 & 可视化
 
 ```bash
+# 使用默认模型（unet）评估
 python eval.py
+
+# 指定模型评估
+python eval.py --model attunet
 ```
 
 将输出：
@@ -187,6 +199,34 @@ python eval.py
 - **模型复杂度**：Params、FLOPs
 - **推理速度**：FPS、Latency (ms)
 - **可视化窗口**：原图 / 真实标签 / 预测结果 / 差异图
+
+### 推理预测
+
+`predict.py` 支持两种推理模式，输出为**分割掩膜叠加图**（灰度原图 + 红色半透明分割区域），清晰展示分割结果。
+
+#### 单张图片推理
+
+```bash
+python predict.py --image /path/to/image.tif --output ./result.png --model attunet
+```
+
+- `--image`：输入图片路径，支持 `.tif`、`.png`、`.nii` 等格式
+- `--output`：输出叠加图保存路径
+- NIfTI 3D 体积文件自动取中间切片进行推理
+
+#### 文件夹批量推理
+
+```bash
+python predict.py --input_dir ./dataset/H2_4Layer --output_dir ./outputs --model attunet
+```
+
+- `--input_dir`：输入文件夹路径
+- `--output_dir`：输出文件夹路径（默认 `outputs`）
+- 自动扫描文件夹内所有图片文件，**跳过标注文件**（文件名含 `seg`）
+- NIfTI 3D 体积文件自动按 z 轴展开所有切片，逐张推理
+- 输出命名规则：`{文件名}_slice_{序号}.png`
+
+> **自动判断模式**：若 `--input_dir` 存在且为目录则走批量推理，否则检查 `--image` 是否为文件走单张推理。
 
 ### TensorBoard 监控
 
@@ -220,6 +260,10 @@ tensorboard --logdir runs
 | `--model` | `unet` | 模型选择：`unet` / `attunet` / `unet++` |
 | `--log_root` | `runs` | TensorBoard 日志目录 |
 | `--result_root` | `results` | 模型权重保存目录 |
+| `--image` | - | 单张推理输入图片路径（predict.py） |
+| `--output` | `result.png` | 单张推理输出保存路径（predict.py） |
+| `--input_dir` | - | 批量推理输入文件夹路径（predict.py） |
+| `--output_dir` | `outputs` | 批量推理输出文件夹路径（predict.py） |
 
 ---
 
@@ -232,8 +276,27 @@ tensorboard --logdir runs
 5. **评估** — 计算 mIoU / Dice / Accuracy / Precision / Recall
 6. **推理分析** — 统计 Params、FLOPs，测量 FPS、Latency
 7. **可视化** — TensorBoard 曲线 + 分割结果对比图
+8. **推理预测** — 单张图片或文件夹批量推理，输出分割掩膜叠加图
 
 ---
+
+## 补充测试图
+
+<div align="center">
+  <img src="img/image1.png" width="45%" alt="测试图1" />
+  <img src="img/image2.png" width="45%" alt="测试图2" />
+</div>
+<div align="center">
+  <img src="img/image3.png" width="45%" alt="测试图3" />
+</div>
+
+<div align="center">
+  <img src="img/Loss.png" width="60%" alt="Loss曲线" />
+</div>
+<div align="center">
+  <img src="img/mIoU.png" width="60%" alt="mIoU曲线" />
+</div>
+
 
 ## 许可证
 

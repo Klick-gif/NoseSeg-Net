@@ -38,9 +38,6 @@ def main():
         device,
         num_classes=config.num_classes,
     )
-    print(f'Val Metrics: Dice: {val_metrics["Dice"]:.4f}, IOU: {val_metrics["mIoU"]:.4f}, '
-          f'Accuracy: {val_metrics["Accuracy"]:.4f}, Precision: {val_metrics["Precision"]:.4f}, '
-          f'Recall: {val_metrics["Recall"]:.4f}')
 
 
 if __name__ == "__main__":

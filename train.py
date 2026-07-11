@@ -112,3 +112,6 @@ def train_model(
     writer.close()
     return train_losses, val_losses
 
+
+
+

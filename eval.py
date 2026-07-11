@@ -120,65 +120,47 @@ def visualize_successful_segmentation(image, true_mask, pred_mask, metrics):
     axes[1, 2].axis('off')
     
     plt.tight_layout()
-    plt.show()
+    return fig
 
 
 def calculate_model_complexity(model,
                                input_size=(1, 1, 512, 512),
                                device="cuda"):
     """Params、FLOPs统计"""
-
     model.eval()
-
     dummy = torch.randn(input_size).to(device)
-
     flops, params = profile(
         model,
         inputs=(dummy,),
         verbose=False
     )
-
     flops, params = clever_format(
         [flops, params],
         "%.3f"
     )
-
     return params, flops
 
 
 def calculate_fps(model, input_size=(1,1,512,512), device="cuda",
                   warmup=20, repeat=100):
     """测试推理速度FPS, latency(ms)"""
-
     model.eval()
-
     dummy = torch.randn(input_size).to(device)
-
     with torch.no_grad():
-
         # GPU预热
         for _ in range(warmup):
             _ = model(dummy)
-
         if device == "cuda":
             torch.cuda.synchronize()
-
         start = time.time()
-
         for _ in range(repeat):
             _ = model(dummy)
-
         if device == "cuda":
             torch.cuda.synchronize()
-
         end = time.time()
-
     total = end - start
-
     latency = total / repeat
-
     fps = repeat / total
-
     return fps, latency * 1000
 
 
@@ -199,6 +181,18 @@ if __name__ == "__main__":
           f"Accuracy: {metrics['Accuracy']:.4f}, Precision: {metrics['Precision']:.4f}, "
           f"Recall: {metrics['Recall']:.4f}")
     
+    # 计算模型复杂度
+    params, flops = calculate_model_complexity(
+        model,
+        input_size=(1,1,config.image_size,config.image_size),
+        device=device
+    )
+    print(f"Params: {params}, FLOPs: {flops}")
+    
+    # 计算推理速度
+    fps, latency = calculate_fps(model, device=device)
+    print(f"FPS: {fps:.2f}, Latency(ms): {latency:.2f}")
+    
     # 可视化成功分割结果
     image_batch, true_mask_batch = next(iter(train_loader))
     for i in range(image_batch.shape[0]):
@@ -212,17 +206,3 @@ if __name__ == "__main__":
         visualize_successful_segmentation(image, true_mask, pred_mask, metrics)
 
 
-    # 计算模型复杂度
-    params, flops = calculate_model_complexity(
-        model,
-        input_size=(1,1,config.image_size,config.image_size),
-        device=device
-    )
-    print(f"Params: {params}, FLOPs: {flops}")
-    
-    # 计算推理速度
-    fps, latency = calculate_fps(model, device=device)
-    print(f"FPS: {fps:.2f}, Latency(ms): {latency:.2f}")
-
-
-    

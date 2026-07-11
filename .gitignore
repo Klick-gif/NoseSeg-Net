@@ -33,7 +33,6 @@ logs/
 outputs/
 .tmp/
 temp/
-events.out.tfevents.*
 
 # OS files
 .DS_Store

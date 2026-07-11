@@ -28,6 +28,11 @@ class Config:
     log_root: str = "runs"
     result_root: str = "results"
 
+    image: str = " "
+    output: str = "result.png"
+    input_dir: str = " "
+    output_dir: str = "outputs"
+
 
 def get_config():
     parser = argparse.ArgumentParser(description="Train nose segmentation model")
@@ -56,6 +61,11 @@ def get_config():
     parser.add_argument("--log_root", type=str, default=Config.log_root)
     parser.add_argument("--result_root", type=str, default=Config.result_root)
 
+    parser.add_argument("--image", type=str, default=Config.image)
+    parser.add_argument("--output", type=str, default=Config.output)
+    parser.add_argument("--input_dir", type=str, default=Config.input_dir)
+    parser.add_argument("--output_dir", type=str, default=Config.output_dir)
+
     args = parser.parse_args()
     return Config(
         seed=args.seed,
@@ -78,4 +88,8 @@ def get_config():
         model=args.model,
         log_root=args.log_root,
         result_root=args.result_root,
+        image=args.image,
+        output=args.output,
+        input_dir=args.input_dir,
+        output_dir=args.output_dir,
     )
