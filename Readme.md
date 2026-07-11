@@ -283,18 +283,37 @@ tensorboard --logdir runs
 ## 补充测试图
 
 <div align="center">
-  <img src="img/image1.png" width="45%" alt="测试图1" />
-  <img src="img/image2.png" width="45%" alt="测试图2" />
-</div>
-<div align="center">
-  <img src="img/image3.png" width="45%" alt="测试图3" />
+  <img src="img/image1.png" width="80%" alt="测试图1" />
 </div>
 
+<br/>
+
 <div align="center">
-  <img src="img/Loss.png" width="60%" alt="Loss曲线" />
+  <img src="img/image2.png" width="80%" alt="测试图2" />
 </div>
+
+<br/>
+
 <div align="center">
-  <img src="img/mIoU.png" width="60%" alt="mIoU曲线" />
+  <img src="img/image3.png" width="80%" alt="测试图3" />
+</div>
+
+<br/>
+
+<div align="center">
+  <img src="img/image4.png" width="80%" alt="测试图4" />
+</div>
+
+<br/>
+
+<div align="center">
+  <img src="img/Loss.png" width="80%" alt="Loss曲线" />
+</div>
+
+<br/>
+
+<div align="center">
+  <img src="img/mIoU.png" width="80%" alt="mIoU曲线" />
 </div>
 
 
