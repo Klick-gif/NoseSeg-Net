@@ -80,11 +80,6 @@ ITK/
 
 > 数据集自动扫描 `dataset/` 目录，按文件名中是否包含 `seg` 区分原图与标注。
 
-原标注数据以及预处理后的数据均存储，预训练模型在网盘可自取
-通过网盘分享的文件：NoseSeg
-链接: https://pan.baidu.com/s/1E3Ti4Xhj68xMvsEMFBfBBQ?pwd=swie 提取码: swie 
---来自百度网盘超级会员v4的分享
-
 ---
 
 ## 模型
